@@ -1,0 +1,2153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strike Force One</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+            touch-action: none;
+        }
+        
+        #gameTitle {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            margin: 15px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        #gameContainer {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 100%;
+            overflow: auto;
+        }
+        
+        #gameBoard {
+            position: relative;
+            margin: 0 auto;
+        }
+        
+        .hex {
+            position: absolute;
+            width: 50px;
+            height: 43.3px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .hex-inner {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #666;
+        }
+        
+        .hex-ordinary .hex-inner {
+            background: #f5f5dc;
+        }
+        
+        .hex-town .hex-inner {
+            background: repeating-linear-gradient(
+                45deg,
+                #8B7355,
+                #8B7355 5px,
+                #A0826D 5px,
+                #A0826D 10px
+            );
+        }
+        
+        .hex-town.soviet-controlled .hex-inner {
+            background: repeating-linear-gradient(
+                45deg,
+                #8B0000,
+                #8B0000 5px,
+                #A52A2A 5px,
+                #A52A2A 10px
+            );
+            box-shadow: inset 0 0 20px rgba(139, 0, 0, 0.5);
+        }
+        
+        .hex-town.us-controlled .hex-inner {
+            background: repeating-linear-gradient(
+                45deg,
+                #1E3A8A,
+                #1E3A8A 5px,
+                #3B82F6 5px,
+                #3B82F6 10px
+            );
+            box-shadow: inset 0 0 20px rgba(30, 58, 138, 0.5);
+        }
+        
+        .hex-woods .hex-inner {
+            background: #228B22;
+            background-image: 
+                radial-gradient(circle at 20% 30%, #2d5016 0%, transparent 40%),
+                radial-gradient(circle at 60% 70%, #2d5016 0%, transparent 40%),
+                radial-gradient(circle at 80% 20%, #1a3d0f 0%, transparent 35%);
+        }
+        
+        .hex.selected .hex-inner {
+            border-color: #ffd700;
+            border-width: 3px;
+            box-shadow: 0 0 10px #ffd700;
+        }
+        
+        .hex.valid-move .hex-inner {
+            border-color: #00ff00;
+            border-width: 3px;
+        }
+        
+        .hex.valid-attack .hex-inner {
+            border-color: #ff0000;
+            border-width: 3px;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        .unit {
+            width: 35px;
+            height: 35px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            color: white;
+            border: 2px solid rgba(0,0,0,0.3);
+            position: relative;
+            cursor: pointer;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .unit-us {
+            background: linear-gradient(135deg, #4CAF50 0%, #2e7d32 100%);
+        }
+        
+        .unit-soviet {
+            background: linear-gradient(135deg, #8B4513 0%, #5d2e0c 100%);
+        }
+        
+        .unit-artillery {
+            background: linear-gradient(135deg, #1a5276 0%, #0e2f44 100%) !important;
+            border: 2px solid #7fb3d3 !important;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .unit.moved {
+            opacity: 0.6;
+        }
+        
+        .unit-stack {
+            position: relative;
+        }
+        
+        .unit-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ff4444;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            border: 2px solid white;
+        }
+        
+        #controls {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        #statusBar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .player-indicator {
+            padding: 10px 20px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .player-indicator.active {
+            background: #ffd700;
+            color: #2c3e50;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+        }
+        
+        #actionButtons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        #endTurnBtn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+        
+        #resetBtn {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+        
+        #attackBtn {
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+            color: white;
+        }
+        
+        #combatLog {
+            margin-top: 15px;
+            padding: 15px;
+            background: #ecf0f1;
+            border-radius: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #bdc3c7;
+        }
+        
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .log-combat {
+            color: #c0392b;
+            font-weight: bold;
+        }
+        
+        .log-move {
+            color: #2980b9;
+        }
+        
+        #combatModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        #combatModal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            margin: 20px auto;
+            max-height: 85vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        
+        .modal-header {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            text-align: center;
+        }
+        
+        .combat-info {
+            margin: 15px 0;
+            padding: 15px;
+            background: #ecf0f1;
+            border-radius: 8px;
+        }
+        
+        .combat-result {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+        
+        .unit-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .selectable-unit {
+            padding: 15px 20px;
+            background: #3498db;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            min-width: 100px;
+            border: 3px solid transparent;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .selectable-unit:active {
+            transform: scale(0.95);
+        }
+        
+        .selectable-unit.selected {
+            background: #27ae60;
+            border-color: #1e8449;
+            box-shadow: 0 0 15px rgba(39, 174, 96, 0.5);
+        }
+        
+        @media (max-width: 600px) {
+            #gameTitle {
+                font-size: 22px;
+            }
+            
+            .hex {
+                width: 40px;
+                height: 34.64px;
+            }
+            
+            .unit {
+                width: 28px;
+                height: 28px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameTitle">STRIKE FORCE ONE</div>
+    
+    <div id="gameContainer">
+        <div id="gameBoard"></div>
+        
+        <div id="controls">
+            <div id="statusBar">
+                <div class="player-indicator" id="usIndicator">🇺🇸 US Forces</div>
+                <div style="text-align: center;">
+                    <div>Turn: <span id="turnCount">1</span></div>
+                    <div id="phaseIndicator" style="font-size: 14px; color: #ffd700; margin-top: 3px; font-weight: bold;"></div>
+                    <div id="turnHint" style="font-size: 12px; color: #ecf0f1; margin-top: 5px; font-style: italic;"></div>
+                </div>
+                <div class="player-indicator" id="sovietIndicator">🇷🇺 Soviet Forces</div>
+            </div>
+            
+            <div id="actionButtons">
+                <button id="splitUnitsBtn" style="display: none; background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white;">SPLIT UNITS</button>
+                <button id="beginCombatBtn" style="display: none; background: linear-gradient(135deg, #e67e22 0%, #d35400 100%); color: white;">BEGIN COMBAT</button>
+                <button id="attackBtn" style="display: none;">ATTACK</button>
+                <button id="endTurnBtn">END TURN</button>
+                <button id="resetBtn">RESET GAME</button>
+            </div>
+            
+            <div id="townControlDisplay" style="margin-top: 15px; padding: 15px; background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%); border-radius: 10px; color: white; text-align: center;">
+                <div style="font-weight: bold; margin-bottom: 10px; font-size: 16px;">🏛️ TOWN CONTROL 🏛️</div>
+                <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px;">
+                    <div id="town-0302" style="flex: 1; min-width: 100px; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 5px;">
+                        <div style="font-size: 12px;">Bergtheim</div>
+                        <div style="font-weight: bold; font-size: 14px;" id="control-0302">US</div>
+                    </div>
+                    <div id="town-0406" style="flex: 1; min-width: 100px; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 5px;">
+                        <div style="font-size: 12px;">Esleben</div>
+                        <div style="font-weight: bold; font-size: 14px;" id="control-0406">US</div>
+                    </div>
+                    <div id="town-0107" style="flex: 1; min-width: 100px; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 5px;">
+                        <div style="font-size: 12px;">Ganheim</div>
+                        <div style="font-weight: bold; font-size: 14px;" id="control-0107">NEUTRAL</div>
+                    </div>
+                </div>
+                <div style="margin-top: 10px; font-size: 11px; font-style: italic;">
+                    Soviet Victory: 3 towns OR 2+ towns after Turn 10 | US Victory: Turn 10 OR Soviet loses 3+ units
+                </div>
+            </div>
+            
+            <div id="combatLog"></div>
+        </div>
+    </div>
+    
+    <div id="combatModal">
+        <div class="modal-content">
+            <div class="modal-header">COMBAT RESOLUTION</div>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        // Combat Results Table
+        const COMBAT_TABLE = {
+            1: {
+                1: "Defender Retreats One Hex",
+                2: "Defender Retreats One Hex", 
+                3: "Defender Retreats One Hex",
+                4: "Defender Eliminated",
+                5: "Defender Eliminated",
+                6: "Defender Eliminated"
+            },
+            2: {
+                1: "Defender Retreats One Hex",
+                2: "Defender Retreats One Hex",
+                3: "Defender Retreats One Hex",
+                4: "Defender Eliminated",
+                5: "Defender Eliminated",
+                6: "Defender Eliminated"
+            },
+            3: {
+                1: "Attacker Retreats One Hex",
+                2: "Defender Retreats One Hex",
+                3: "Defender Retreats One Hex",
+                4: "Defender Retreats One Hex",
+                5: "Defender Eliminated",
+                6: "Defender Eliminated"
+            },
+            4: {
+                1: "Attacker Retreats One Hex",
+                2: "Attacker Retreats One Hex",
+                3: "Defender Retreats One Hex",
+                4: "Defender Retreats One Hex",
+                5: "Defender Retreats One Hex",
+                6: "Defender Eliminated"
+            },
+            5: {
+                1: "Attacker Retreats One Hex",
+                2: "Attacker Retreats One Hex",
+                3: "Defender Retreats One Hex",
+                4: "Defender Retreats One Hex",
+                5: "Defender Retreats One Hex",
+                6: "Defender Retreats One Hex"
+            },
+            6: {
+                1: "Attacker Eliminated",
+                2: "Attacker Retreats One Hex",
+                3: "Attacker Retreats One Hex",
+                4: "Defender Retreats One Hex",
+                5: "Defender Retreats One Hex",
+                6: "Defender Retreats One Hex"
+            }
+        };
+
+        // Game state
+        let currentPlayer = 'soviet';  // Soviet moves first
+        let turnNumber = 1;
+        let selectedHex = null;
+        let selectedUnits = [];
+        let movedUnits = new Set();
+        let attackMode = false;
+        let turnPhase = 'movement';  // 'movement' or 'combat'
+        let combatOccurred = false;  // Track if any combat has happened this turn
+        
+        // Town control tracking
+        let townControl = {
+            '0302': 'us',      // Bergtheim - starts US controlled (M starts here)
+            '0406': 'us',      // Esleben - starts US controlled (O starts here)
+            '0107': 'neutral'  // Ganheim - starts neutral
+        };
+
+        // Hex grid data structure
+        const hexGrid = {};
+        
+        // Map layout - 9 columns, 8 rows (offset odd rows)
+        const MAP_COLS = 9;
+        const MAP_ROWS = 8;
+        
+        // Special hexes
+        const TOWNS = ['0302', '0406', '0107']; // Bergtheim, Esleben, Ganheim
+        const WOODS = ['0304', '0504', '0606', '0207', '0307']; // Woods hexes marked with X and Z
+        
+        // Starting positions - SWITCHED: US now on left, Soviet on right
+        const START_POSITIONS = {
+            soviet: [
+                {hex: '0901', label: 'B'},
+                {hex: '0702', label: 'A'},
+                {hex: '0902', label: 'C'},
+                {hex: '0806', label: 'D'},
+                {hex: '0907', label: 'E'},
+                {hex: '0908', label: 'F'}
+            ],
+            us: [
+                {hex: '0302', label: 'M'},  // Infantry at town Bergtheim
+                {hex: '0403', label: 'N'},
+                {hex: '0406', label: 'O'},  // Infantry at town Esleben
+                {hex: '0207', label: 'P'},
+                {hex: '0305', label: 'Z', type: 'artillery'}  // Artillery
+            ]
+        };
+
+        // Initialize game
+        function init() {
+            createHexGrid();
+            setupUnits();
+            updateTownControl();  // Initialize town control visuals
+            updateDisplay();
+            addEventListeners();
+            logMessage('Game started! Soviet Forces move first. Good luck!');
+        }
+
+        function createHexGrid() {
+            const board = document.getElementById('gameBoard');
+            const hexWidth = 50;
+            const hexHeight = 43.3;
+            const horizontalSpacing = hexWidth * 0.75;
+            const verticalSpacing = hexHeight;
+            
+            let maxX = 0;
+            let maxY = 0;
+
+            for (let row = 1; row <= MAP_ROWS; row++) {
+                for (let col = 1; col <= MAP_COLS; col++) {
+                    const hexId = String(col).padStart(2, '0') + String(row).padStart(2, '0');
+                    
+                    const x = (col - 1) * horizontalSpacing;
+                    const y = (row - 1) * verticalSpacing + (col % 2 === 0 ? verticalSpacing / 2 : 0);
+                    
+                    maxX = Math.max(maxX, x + hexWidth);
+                    maxY = Math.max(maxY, y + hexHeight);
+                    
+                    const hex = document.createElement('div');
+                    hex.className = 'hex';
+                    hex.id = 'hex-' + hexId;
+                    hex.style.left = x + 'px';
+                    hex.style.top = y + 'px';
+                    
+                    const hexInner = document.createElement('div');
+                    hexInner.className = 'hex-inner';
+                    
+                    // Add coordinate label for debugging
+                    const label = document.createElement('div');
+                    label.style.cssText = 'position: absolute; top: 2px; left: 2px; font-size: 8px; color: #999; pointer-events: none;';
+                    label.textContent = hexId;
+                    hexInner.appendChild(label);
+                    
+                    // Set terrain type
+                    if (TOWNS.includes(hexId)) {
+                        hex.classList.add('hex-town');
+                    } else if (WOODS.includes(hexId)) {
+                        hex.classList.add('hex-woods');
+                    } else {
+                        hex.classList.add('hex-ordinary');
+                    }
+                    
+                    hex.appendChild(hexInner);
+                    board.appendChild(hex);
+                    
+                    hexGrid[hexId] = {
+                        id: hexId,
+                        col: col,
+                        row: row,
+                        x: x,
+                        y: y,
+                        element: hex,
+                        units: [],
+                        terrain: WOODS.includes(hexId) ? 'woods' : (TOWNS.includes(hexId) ? 'town' : 'ordinary')
+                    };
+                }
+            }
+            
+            board.style.width = maxX + 'px';
+            board.style.height = maxY + 'px';
+        }
+
+        function setupUnits() {
+            // Setup US units
+            START_POSITIONS.us.forEach((pos, index) => {
+                const unit = {
+                    id: 'us-' + (index + 1),
+                    player: 'us',
+                    hex: pos.hex,
+                    label: pos.label,
+                    type: pos.type || 'infantry',
+                    moved: false
+                };
+                hexGrid[pos.hex].units.push(unit);
+            });
+            
+            // Setup Soviet units  
+            START_POSITIONS.soviet.forEach((pos, index) => {
+                const unit = {
+                    id: 'soviet-' + (index + 1),
+                    player: 'soviet',
+                    hex: pos.hex,
+                    label: pos.label,
+                    type: pos.type || 'infantry',
+                    moved: false
+                };
+                hexGrid[pos.hex].units.push(unit);
+            });
+            
+            renderUnits();
+        }
+
+        function renderUnits() {
+            // Clear all units from display
+            document.querySelectorAll('.unit').forEach(el => el.remove());
+            
+            // Render units in each hex
+            Object.values(hexGrid).forEach(hex => {
+                if (hex.units.length > 0) {
+                    const hexEl = hex.element.querySelector('.hex-inner');
+                    
+                    // Group units by player
+                    const usUnits = hex.units.filter(u => u.player === 'us');
+                    const sovietUnits = hex.units.filter(u => u.player === 'soviet');
+                    
+                    if (usUnits.length > 0) {
+                        renderUnitStack(hexEl, usUnits, 'us');
+                    }
+                    if (sovietUnits.length > 0) {
+                        renderUnitStack(hexEl, sovietUnits, 'soviet');
+                    }
+                }
+            });
+        }
+
+        function renderUnitStack(hexEl, units, player) {
+            const unitDiv = document.createElement('div');
+            unitDiv.className = `unit unit-${player}`;
+            if (units[0].moved) {
+                unitDiv.classList.add('moved');
+            }
+            
+            const isArtillery = units[0].type === 'artillery';
+            
+            if (isArtillery) {
+                // Artillery: draw circle-with-dot SVG symbol
+                unitDiv.classList.add('unit-artillery');
+                unitDiv.innerHTML = `
+                    <svg width="22" height="22" viewBox="0 0 22 22">
+                        <circle cx="11" cy="11" r="9" fill="none" stroke="white" stroke-width="2.5"/>
+                        <circle cx="11" cy="11" r="3" fill="white"/>
+                    </svg>
+                `;
+                // Small label below
+                const lbl = document.createElement('div');
+                lbl.style.cssText = 'font-size:8px; color:white; line-height:1; margin-top:1px;';
+                lbl.textContent = units[0].label;
+                unitDiv.appendChild(lbl);
+            } else {
+                unitDiv.textContent = units[0].label;
+            }
+            
+            unitDiv.dataset.hexId = units[0].hex;
+            unitDiv.dataset.player = player;
+            
+            if (units.length > 1) {
+                unitDiv.classList.add('unit-stack');
+                const countBadge = document.createElement('div');
+                countBadge.className = 'unit-count';
+                countBadge.textContent = units.length;
+                unitDiv.appendChild(countBadge);
+            }
+            
+            hexEl.appendChild(unitDiv);
+        }
+
+        function getAdjacentHexes(hexId) {
+            const hex = hexGrid[hexId];
+            if (!hex) return [];
+            
+            const col = hex.col;
+            const row = hex.row;
+            const isEvenCol = col % 2 === 0;
+            
+            const offsets = isEvenCol ? [
+                [0, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0]
+            ] : [
+                [0, -1], [1, -1], [1, 0], [0, 1], [-1, 0], [-1, -1]
+            ];
+            
+            const adjacent = [];
+            offsets.forEach(([dc, dr]) => {
+                const newCol = col + dc;
+                const newRow = row + dr;
+                const newId = String(newCol).padStart(2, '0') + String(newRow).padStart(2, '0');
+                if (hexGrid[newId]) {
+                    adjacent.push(newId);
+                }
+            });
+            
+            return adjacent;
+        }
+
+        function getValidMoves(hexId, remainingMoves = null, visited = new Set(), path = []) {
+            // Determine max moves based on unit type
+            if (remainingMoves === null) {
+                const hex = hexGrid[hexId];
+                const myUnit = hex.units.find(u => u.player === currentPlayer && !u.moved);
+                remainingMoves = (myUnit && myUnit.type === 'artillery') ? 2 : 4;
+            }
+            if (remainingMoves === 0) return [];
+            
+            const validMoves = [];
+            const adjacent = getAdjacentHexes(hexId);
+            
+            adjacent.forEach(adjId => {
+                if (visited.has(adjId)) return;
+                
+                const adjHex = hexGrid[adjId];
+                
+                // Woods cost 2 movement points to enter (so need at least 2 remaining)
+                const moveCost = adjHex.terrain === 'woods' ? 2 : 1;
+                if (moveCost > remainingMoves) return;
+                
+                // Can't move into hex with any enemy units
+                if (adjHex.units.some(u => u.player !== currentPlayer)) return;
+                
+                // Stacking limit: Woods = 1 unit max, Towns/Open = 2 units max
+                // Only block if hex already has friendly units at/above the limit
+                const stackLimit = adjHex.terrain === 'woods' ? 1 : 2;
+                const friendlyUnits = adjHex.units.filter(u => u.player === currentPlayer).length;
+                if (friendlyUnits >= stackLimit) return;
+                
+                const newPath = [...path, adjId];
+                const hasEnemyAdjacent = getAdjacentHexes(adjId).some(id => {
+                    const h = hexGrid[id];
+                    return h.units.some(u => u.player !== currentPlayer);
+                });
+                
+                // Must stop when adjacent to enemy
+                if (hasEnemyAdjacent) {
+                    validMoves.push({hex: adjId, path: newPath});
+                } else {
+                    validMoves.push({hex: adjId, path: newPath});
+                    
+                    // Continue moving if not adjacent to enemy
+                    const newVisited = new Set([...visited, hexId]);
+                    const furtherMoves = getValidMoves(adjId, remainingMoves - moveCost, newVisited, newPath);
+                    validMoves.push(...furtherMoves);
+                }
+            });
+            
+            return validMoves;
+        }
+
+        function getRetreatHex(fromHexId, player) {
+            const adjacentHexes = getAdjacentHexes(fromHexId);
+            const fromHex = hexGrid[fromHexId];
+            
+            // Determine home direction: US prefers low columns (left), Soviet prefers high columns (right)
+            const preferLowColumns = (player === 'us');
+            
+            // Helper: check if hex is in enemy zone of control (adjacent to enemy unit)
+            function isInEnemyZOC(hexId) {
+                const neighbors = getAdjacentHexes(hexId);
+                return neighbors.some(nId => {
+                    return hexGrid[nId].units.some(u => u.player !== player);
+                });
+            }
+            
+            // PRIORITY 1: Unoccupied space outside enemy ZOC (not woods)
+            const priority1 = adjacentHexes.filter(id => {
+                const h = hexGrid[id];
+                return h.terrain !== 'woods' &&  // Can't retreat into woods
+                       h.units.length === 0 && 
+                       !isInEnemyZOC(id);
+            });
+            
+            if (priority1.length > 0) {
+                priority1.sort((a, b) => {
+                    const hexA = hexGrid[a];
+                    const hexB = hexGrid[b];
+                    return preferLowColumns ? hexA.col - hexB.col : hexB.col - hexA.col;
+                });
+                return priority1[0];
+            }
+            
+            // PRIORITY 2: Friendly occupied space (even if in ZOC) with room (< 2 units)
+            const priority2 = adjacentHexes.filter(id => {
+                const h = hexGrid[id];
+                return h.terrain !== 'woods' && 
+                       h.units.length > 0 && 
+                       h.units.length < 2 &&
+                       h.units.every(u => u.player === player);
+            });
+            
+            if (priority2.length > 0) {
+                priority2.sort((a, b) => {
+                    const hexA = hexGrid[a];
+                    const hexB = hexGrid[b];
+                    return preferLowColumns ? hexA.col - hexB.col : hexB.col - hexA.col;
+                });
+                return priority2[0];
+            }
+            
+            // PRIORITY 3: Must retreat through enemy ZOC - trigger forced retreat combat
+            const priority3 = adjacentHexes.filter(id => {
+                const h = hexGrid[id];
+                return h.terrain !== 'woods' && 
+                       h.units.length === 0 &&
+                       isInEnemyZOC(id);
+            });
+            
+            if (priority3.length > 0) {
+                priority3.sort((a, b) => {
+                    const hexA = hexGrid[a];
+                    const hexB = hexGrid[b];
+                    return preferLowColumns ? hexA.col - hexB.col : hexB.col - hexA.col;
+                });
+                
+                // Return special object indicating forced combat needed
+                return { hex: priority3[0], forcedCombat: true };
+            }
+            
+            // No valid retreat - unit will be eliminated
+            return null;
+        }
+        
+        function handleForcedRetreatCombat(unit, toHexId) {
+            // Roll on Equal column (column 1) - unit is treated as "attacker"
+            const dieRoll = Math.floor(Math.random() * 6) + 1;
+            const result = COMBAT_TABLE[dieRoll][1];  // Column 1 = Equal
+            
+            logMessage(`Forced retreat combat for ${unit.label}: rolled ${dieRoll} on Equal column. ${result}`, 'log-combat');
+            
+            if (result.includes('Attacker Eliminated')) {
+                // Unit is eliminated
+                const hex = hexGrid[unit.hex];
+                if (hex) {
+                    hex.units = hex.units.filter(u => u.id !== unit.id);
+                }
+                logMessage(`Unit ${unit.label} eliminated during forced retreat!`, 'log-combat');
+                return null;  // Unit destroyed
+            } else if (result.includes('Attacker Retreats')) {
+                // Must retreat again - recursively find another hex
+                logMessage(`Unit ${unit.label} must retreat again...`, 'log-combat');
+                const nextRetreat = getRetreatHex(unit.hex, unit.player);
+                if (nextRetreat && nextRetreat.forcedCombat) {
+                    return handleForcedRetreatCombat(unit, nextRetreat.hex);
+                } else if (nextRetreat) {
+                    return nextRetreat.hex ? nextRetreat.hex : nextRetreat;
+                } else {
+                    // Nowhere to go - eliminated
+                    const hex = hexGrid[unit.hex];
+                    if (hex) {
+                        hex.units = hex.units.filter(u => u.id !== unit.id);
+                    }
+                    logMessage(`Unit ${unit.label} eliminated (no retreat path)!`, 'log-combat');
+                    return null;
+                }
+            } else {
+                // Defender retreats/eliminated = no effect on retreating unit, it reaches the hex safely
+                return toHexId;
+            }
+        }
+
+        function updateTownControl() {
+            // Check each town hex
+            Object.keys(townControl).forEach(hexId => {
+                const hex = hexGrid[hexId];
+                if (!hex) return;
+                
+                const hasUS = hex.units.some(u => u.player === 'us');
+                const hasSoviet = hex.units.some(u => u.player === 'soviet');
+                
+                // Update control based on who occupies the town
+                if (hasSoviet && !hasUS) {
+                    if (townControl[hexId] !== 'soviet') {
+                        townControl[hexId] = 'soviet';
+                        logMessage(`🏛️ Soviet forces capture ${getTownName(hexId)}!`, 'log-combat');
+                    }
+                } else if (hasUS && !hasSoviet) {
+                    if (townControl[hexId] !== 'us') {
+                        townControl[hexId] = 'us';
+                        logMessage(`🏛️ US forces recapture ${getTownName(hexId)}!`, 'log-combat');
+                    }
+                }
+                // If both or neither, control doesn't change
+                
+                // Update hex visual
+                hex.element.classList.remove('soviet-controlled', 'us-controlled');
+                if (townControl[hexId] === 'soviet') {
+                    hex.element.classList.add('soviet-controlled');
+                } else if (townControl[hexId] === 'us') {
+                    hex.element.classList.add('us-controlled');
+                }
+                
+                // Update display panel
+                const controlDisplay = document.getElementById(`control-${hexId}`);
+                if (controlDisplay) {
+                    const displayText = townControl[hexId].toUpperCase();
+                    controlDisplay.textContent = displayText;
+                    controlDisplay.style.color = townControl[hexId] === 'soviet' ? '#ff4444' : 
+                                                  townControl[hexId] === 'us' ? '#4488ff' : '#ffffff';
+                }
+            });
+            
+            // Check victory conditions after updating control
+            checkVictoryConditions();
+        }
+        
+        function getTownName(hexId) {
+            const names = {
+                '0302': 'Bergtheim',
+                '0406': 'Esleben',
+                '0107': 'Ganheim'
+            };
+            return names[hexId] || 'Town';
+        }
+        
+        function checkVictoryConditions() {
+            const sovietTowns = Object.values(townControl).filter(c => c === 'soviet').length;
+            
+            // Soviet instant win: 3 towns
+            if (sovietTowns >= 3) {
+                endGame('soviet', 'Soviet forces control all 3 towns! Soviet Victory! 🇷🇺');
+                return;
+            }
+            
+            // After turn 10: Soviet wins with 2+ towns, US wins otherwise
+            if (turnNumber > 10) {
+                if (sovietTowns >= 2) {
+                    endGame('soviet', `Soviet forces control ${sovietTowns} towns after turn 10! Soviet Victory! 🇷🇺`);
+                } else {
+                    endGame('us', 'Turn 10 complete! US forces hold the line! US Victory! 🇺🇸');
+                }
+                return;
+            }
+            
+            // US instant win: Soviet loses 3 units
+            const sovietUnitsRemaining = Object.values(hexGrid).reduce((count, hex) => {
+                return count + hex.units.filter(u => u.player === 'soviet').length;
+            }, 0);
+            
+            if (sovietUnitsRemaining <= 3) {
+                endGame('us', `Soviet forces reduced to ${sovietUnitsRemaining} units! US Victory! 🇺🇸`);
+                return;
+            }
+        }
+        
+        function endGame(winner, message) {
+            logMessage(message, 'log-combat');
+            
+            const modal = document.getElementById('combatModal');
+            const modalBody = document.getElementById('modalBody');
+            
+            const winnerColor = winner === 'soviet' ? '#8B0000' : '#1E3A8A';
+            const winnerFlag = winner === 'soviet' ? '🇷🇺' : '🇺🇸';
+            
+            modalBody.innerHTML = `
+                <div class="modal-header" style="font-size: 32px; color: ${winnerColor};">
+                    ${winnerFlag} GAME OVER ${winnerFlag}
+                </div>
+                <div style="font-size: 24px; font-weight: bold; text-align: center; margin: 30px 0; color: ${winnerColor};">
+                    ${message}
+                </div>
+                <div class="combat-info">
+                    <strong>Final Town Control:</strong><br>
+                    🏛️ Bergtheim: ${townControl['0302'].toUpperCase()}<br>
+                    🏛️ Esleben: ${townControl['0406'].toUpperCase()}<br>
+                    🏛️ Ganheim: ${townControl['0107'].toUpperCase()}
+                </div>
+                <div style="text-align: center; margin-top: 30px;">
+                    <button onclick="location.reload()" 
+                            style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); 
+                                   color: white; padding: 15px 40px; font-size: 18px;
+                                   font-weight: bold; border: none; border-radius: 10px;
+                                   cursor: pointer;">
+                        PLAY AGAIN
+                    </button>
+                </div>
+            `;
+            
+            modal.classList.add('show');
+        }
+
+        function getHexesInRange(hexId, range, visited = new Set()) {
+            if (range === 0) return [];
+            visited.add(hexId);
+            const results = new Set();
+            const adjacent = getAdjacentHexes(hexId);
+            adjacent.forEach(adjId => {
+                if (!visited.has(adjId)) {
+                    results.add(adjId);
+                    const further = getHexesInRange(adjId, range - 1, new Set(visited));
+                    further.forEach(id => results.add(id));
+                }
+            });
+            return [...results];
+        }
+
+        function getArtilleryTargets(hexId) {
+            // Artillery can attack any hex with enemies within range 3
+            const inRange = getHexesInRange(hexId, 3);
+            return inRange.filter(id => {
+                return hexGrid[id].units.some(u => u.player !== currentPlayer);
+            });
+        }
+
+        function getValidAttacks(hexId) {
+            const validAttacks = [];
+            const adjacent = getAdjacentHexes(hexId);
+            
+            adjacent.forEach(adjId => {
+                const adjHex = hexGrid[adjId];
+                const enemyUnits = adjHex.units.filter(u => u.player !== currentPlayer);
+                if (enemyUnits.length > 0) {
+                    validAttacks.push(adjId);
+                }
+            });
+            
+            return validAttacks;
+        }
+
+        function highlightValidMoves(hexId) {
+            clearHighlights();
+            
+            if (attackMode) {
+                const attacks = getValidAttacks(hexId);
+                attacks.forEach(id => {
+                    hexGrid[id].element.classList.add('valid-attack');
+                });
+                return attacks;
+            } else {
+                const moves = getValidMoves(hexId);
+                const uniqueHexes = [...new Set(moves.map(m => m.hex))];
+                uniqueHexes.forEach(id => {
+                    hexGrid[id].element.classList.add('valid-move');
+                });
+                return uniqueHexes;
+            }
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.hex').forEach(hex => {
+                hex.classList.remove('valid-move', 'valid-attack', 'selected');
+            });
+        }
+
+        function selectHex(hexId) {
+            const hex = hexGrid[hexId];
+            if (!hex) return;
+            
+            const myUnits = hex.units.filter(u => u.player === currentPlayer && !u.moved);
+            const enemyUnits = hex.units.filter(u => u.player !== currentPlayer);
+            
+            console.log('Selecting hex:', hexId, 'Phase:', turnPhase, 'Current player:', currentPlayer);
+            
+            // Tapping an enemy hex - ONLY ALLOWED IN COMBAT PHASE
+            if (enemyUnits.length > 0 && myUnits.length === 0) {
+                if (turnPhase === 'movement') {
+                    logMessage('⚠️ Must complete all movement before combat! Click "BEGIN COMBAT" when ready.');
+                    return;
+                }
+                
+                const adjacentHexes = getAdjacentHexes(hexId);
+                
+                // Infantry attackers must be adjacent
+                const attackingHexes = adjacentHexes.filter(adjId => {
+                    const adjHex = hexGrid[adjId];
+                    return adjHex.units.some(u => u.player === currentPlayer && !u.moved && u.type !== 'artillery');
+                });
+                
+                // Artillery attackers within range 3
+                const artilleryAttackers = [];
+                Object.values(hexGrid).forEach(gh => {
+                    gh.units.forEach(u => {
+                        if (u.player === currentPlayer && !u.moved && u.type === 'artillery') {
+                            const targets = getArtilleryTargets(gh.id || u.hex);
+                            if (targets.includes(hexId)) {
+                                artilleryAttackers.push({ unit: u, fromHex: u.hex });
+                            }
+                        }
+                    });
+                });
+                
+                const allAttackingHexes = [...new Set([...attackingHexes])];
+                const hasAttackers = allAttackingHexes.length > 0 || artilleryAttackers.length > 0;
+                
+                if (hasAttackers) {
+                    // Merge infantry and artillery attackers
+                    const allAttackers = [];
+                    allAttackingHexes.forEach(adjId => {
+                        hexGrid[adjId].units
+                            .filter(u => u.player === currentPlayer && !u.moved)
+                            .forEach(u => allAttackers.push({ unit: u, fromHex: adjId }));
+                    });
+                    artilleryAttackers.forEach(a => {
+                        if (!allAttackers.find(x => x.unit.id === a.unit.id)) {
+                            allAttackers.push(a);
+                        }
+                    });
+                    
+                    combatOccurred = true;  // Mark that combat has happened
+                    logMessage(`Attacking ${hexId} - ${allAttackers.length} unit(s) available`);
+                    initiateAttackFromMultipleHexes(allAttackingHexes, hexId, allAttackers);
+                    return;
+                } else {
+                    logMessage(`No adjacent ${currentPlayer.toUpperCase()} units available to attack ${hexId}`);
+                }
+            }
+            
+            // PRIORITY FIX: If we already have a hex selected and this hex is a valid move destination, MOVE instead of switching selection
+            if (selectedHex && selectedHex !== hexId && turnPhase === 'movement') {
+                const validMoves = getValidMoves(selectedHex);
+                const isValidDestination = validMoves.some(m => m.hex === hexId);
+                
+                if (isValidDestination) {
+                    // This hex is a valid movement destination - move there instead of switching selection
+                    moveUnits(selectedHex, hexId);
+                    selectedHex = null;
+                    clearHighlights();
+                    return;
+                }
+            }
+            
+            // Trying to move - ONLY ALLOWED IN MOVEMENT PHASE
+            if (myUnits.length === 0) {
+                if (selectedHex && !attackMode) {
+                    if (turnPhase === 'combat') {
+                        logMessage('⚠️ Cannot move during combat phase!');
+                        return;
+                    }
+                    moveUnits(selectedHex, hexId);
+                    selectedHex = null;
+                    clearHighlights();
+                }
+                return;
+            }
+            
+            // Select this hex with friendly units
+            selectedHex = hexId;
+            clearHighlights();
+            hex.element.classList.add('selected');
+            
+            // Show split button if multiple unmoved units
+            const splitBtn = document.getElementById('splitUnitsBtn');
+            if (myUnits.length >= 2 && turnPhase === 'movement') {
+                splitBtn.style.display = 'inline-block';
+            } else {
+                splitBtn.style.display = 'none';
+            }
+            
+            // Check if artillery - highlight ranged targets in red
+            const hasArtillery = myUnits.some(u => u.type === 'artillery');
+            if (hasArtillery && turnPhase === 'combat') {
+                const targets = getArtilleryTargets(hexId);
+                targets.forEach(id => hexGrid[id].element.classList.add('valid-attack'));
+                logMessage('Artillery selected - red hexes are in range. Tap an enemy to fire!');
+            }
+            
+            document.getElementById('attackBtn').style.display = 'none';
+            
+            if (!attackMode && turnPhase === 'movement') {
+                highlightValidMoves(hexId);
+            }
+        }
+
+        function moveUnits(fromHexId, toHexId) {
+            const fromHex = hexGrid[fromHexId];
+            const toHex = hexGrid[toHexId];
+            
+            // Check if move is valid
+            const validMoves = getValidMoves(fromHexId);
+            if (!validMoves.some(m => m.hex === toHexId)) {
+                logMessage('Invalid move!');
+                return;
+            }
+            
+            // Check stacking limit: Woods = 1 unit max, Towns/Open = 2 units max
+            const unitsToMove = fromHex.units.filter(u => u.player === currentPlayer && !u.moved);
+            const friendlyUnitsAtDestination = toHex.units.filter(u => u.player === currentPlayer).length;
+            const stackLimit = toHex.terrain === 'woods' ? 1 : 2;
+            
+            console.log(`Moving to ${toHexId} (${toHex.terrain}): ${friendlyUnitsAtDestination} friendly units there, ${unitsToMove.length} moving, limit ${stackLimit}`);
+            
+            if (friendlyUnitsAtDestination + unitsToMove.length > stackLimit) {
+                logMessage(`Cannot move - ${toHex.terrain} hex limit is ${stackLimit} unit(s) maximum!`);
+                return;
+            }
+            
+            // Move all unmoved units
+            unitsToMove.forEach(unit => {
+                unit.hex = toHexId;
+                unit.moved = true;
+                toHex.units.push(unit);
+                fromHex.units = fromHex.units.filter(u => u.id !== unit.id);
+            });
+            
+            logMessage(`${currentPlayer.toUpperCase()} moved ${unitsToMove.length} unit(s) to ${toHexId}`, 'log-move');
+            updateTownControl();
+            renderUnits();
+        }
+
+        let selectedAttackers = [];
+        let selectedDefender = null;
+
+        function initiateAttackFromMultipleHexes(attackingHexIds, defenderHexId, prebuiltAttackers = null) {
+            const defenderHex = hexGrid[defenderHexId];
+            const defenders = defenderHex.units.filter(u => u.player !== currentPlayer);
+            
+            if (defenders.length === 0) {
+                logMessage('No defenders in that hex!');
+                return;
+            }
+            
+            let allAttackers;
+            if (prebuiltAttackers) {
+                allAttackers = prebuiltAttackers;
+            } else {
+                allAttackers = [];
+                attackingHexIds.forEach(hexId => {
+                    const hex = hexGrid[hexId];
+                    const units = hex.units.filter(u => u.player === currentPlayer && !u.moved);
+                    units.forEach(unit => allAttackers.push({ unit, fromHex: hexId }));
+                });
+            }
+            
+            if (allAttackers.length === 0) {
+                logMessage('No units available to attack!');
+                return;
+            }
+            
+            showMultiHexCombatModal(allAttackers, defenderHexId, defenders);
+        }
+        
+        function showMultiHexCombatModal(attackers, defenderHexId, defenders) {
+            const modal = document.getElementById('combatModal');
+            const modalBody = document.getElementById('modalBody');
+            
+            selectedAttackers = [];
+            selectedDefender = null;
+            
+            let attackerHTML = '';
+            attackers.forEach((attacker, idx) => {
+                const isArt = attacker.unit.type === 'artillery';
+                const typeLabel = isArt ? ' 🎯 ARTILLERY' : '';
+                attackerHTML += `
+                    <div class="selectable-unit" id="attacker-${idx}" onclick="toggleAttacker(${idx})">
+                        Unit ${attacker.unit.label}${typeLabel} (from ${attacker.fromHex})
+                    </div>
+                `;
+            });
+            
+            let defenderHTML = '';
+            defenders.forEach((unit, idx) => {
+                defenderHTML += `
+                    <div class="selectable-unit" id="defender-${idx}" onclick="selectDefender(${idx})">
+                        Unit ${unit.label}
+                    </div>
+                `;
+            });
+            
+            modalBody.innerHTML = `
+                <div class="modal-header">ATTACK HEX ${defenderHexId}</div>
+                <div class="combat-info">
+                    <strong>Select Attacking Units (${currentPlayer.toUpperCase()}):</strong>
+                    <div class="unit-selector">
+                        ${attackerHTML}
+                    </div>
+                    <button onclick="selectAllAttackers(${attackers.length})" style="margin-top: 10px; padding: 8px 16px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        Select All
+                    </button>
+                </div>
+                
+                <div class="combat-info" style="margin-top: 20px;">
+                    <strong>Select Target Defender in ${defenderHexId}:</strong>
+                    <div class="unit-selector">
+                        ${defenderHTML}
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <div id="attackButton" style="display: none;">
+                        <button onclick="proceedWithMultiHexCombat('${defenderHexId}')" 
+                                style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); 
+                                       color: white; 
+                                       padding: 20px 40px; 
+                                       font-size: 22px; 
+                                       font-weight: bold;
+                                       border: 3px solid #c0392b; 
+                                       border-radius: 10px; 
+                                       cursor: pointer;
+                                       box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                                       transition: transform 0.2s;">
+                            🎲 ROLL THE DIE 🎲
+                        </button>
+                    </div>
+                    <div id="selectionPrompt" style="color: #e74c3c; 
+                                                      font-style: italic; 
+                                                      font-size: 16px;
+                                                      padding: 20px;
+                                                      background: #fef5e7;
+                                                      border-radius: 8px;
+                                                      border: 2px dashed #f39c12;">
+                        ⚠️ Select attackers and a defender to proceed
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 10px;">
+                    <button onclick="cancelCombat()" style="padding: 10px 20px; background: #95a5a6; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        Cancel
+                    </button>
+                </div>
+            `;
+            
+            // Store combat data
+            window.combatData = {
+                attackers: attackers,
+                defenders: defenders,
+                defenderHexId: defenderHexId
+            };
+            
+            modal.classList.add('show');
+        }
+        
+        function proceedWithMultiHexCombat(defenderHexId) {
+            const attackerCount = selectedAttackers.length;
+            const defenderUnit = window.combatData.defenders[selectedDefender];
+            
+            resolveCombat(null, defenderHexId, attackerCount, defenderUnit);
+        }
+
+        function initiateAttack(attackerHexId, defenderHexId) {
+            const attackerHex = hexGrid[attackerHexId];
+            const defenderHex = hexGrid[defenderHexId];
+            
+            const attackers = attackerHex.units.filter(u => u.player === currentPlayer && !u.moved);
+            const defenders = defenderHex.units.filter(u => u.player !== currentPlayer);
+            
+            if (attackers.length === 0 || defenders.length === 0) {
+                logMessage('No units to attack with or no defenders!');
+                return;
+            }
+            
+            showCombatModal(attackerHexId, defenderHexId, attackers, defenders);
+        }
+
+        function showCombatModal(attackerHexId, defenderHexId, attackers, defenders) {
+            const modal = document.getElementById('combatModal');
+            const modalBody = document.getElementById('modalBody');
+            
+            selectedAttackers = [];
+            selectedDefender = null;
+            
+            let attackerHTML = '';
+            attackers.forEach((unit, idx) => {
+                attackerHTML += `
+                    <div class="selectable-unit" id="attacker-${idx}" onclick="toggleAttacker(${idx})">
+                        Unit ${unit.label}
+                    </div>
+                `;
+            });
+            
+            let defenderHTML = '';
+            defenders.forEach((unit, idx) => {
+                defenderHTML += `
+                    <div class="selectable-unit" id="defender-${idx}" onclick="selectDefender(${idx})">
+                        Unit ${unit.label}
+                    </div>
+                `;
+            });
+            
+            modalBody.innerHTML = `
+                <div class="combat-info">
+                    <strong>Select Attacking Units (${currentPlayer.toUpperCase()}) from ${attackerHexId}:</strong>
+                    <div class="unit-selector">
+                        ${attackerHTML}
+                    </div>
+                    <button onclick="selectAllAttackers(${attackers.length})" style="margin-top: 10px; padding: 8px 16px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        Select All
+                    </button>
+                </div>
+                
+                <div class="combat-info" style="margin-top: 20px;">
+                    <strong>Select Target Defender in ${defenderHexId}:</strong>
+                    <div class="unit-selector">
+                        ${defenderHTML}
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <div id="attackButton" style="display: none;">
+                        <button onclick="proceedWithCombat('${attackerHexId}', '${defenderHexId}')" 
+                                style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); 
+                                       color: white; 
+                                       padding: 20px 40px; 
+                                       font-size: 22px; 
+                                       font-weight: bold;
+                                       border: 3px solid #c0392b; 
+                                       border-radius: 10px; 
+                                       cursor: pointer;
+                                       box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                                       transition: transform 0.2s;">
+                            🎲 ROLL THE DIE 🎲
+                        </button>
+                    </div>
+                    <div id="selectionPrompt" style="color: #e74c3c; 
+                                                      font-style: italic; 
+                                                      font-size: 16px;
+                                                      padding: 20px;
+                                                      background: #fef5e7;
+                                                      border-radius: 8px;
+                                                      border: 2px dashed #f39c12;">
+                        ⚠️ Select attackers and a defender to proceed
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 10px;">
+                    <button onclick="cancelCombat()" style="padding: 10px 20px; background: #95a5a6; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        Cancel
+                    </button>
+                </div>
+            `;
+            
+            // Store attackers and defenders data globally for the onclick handlers
+            window.combatData = {
+                attackers: attackers,
+                defenders: defenders,
+                attackerHexId: attackerHexId,
+                defenderHexId: defenderHexId
+            };
+            
+            modal.classList.add('show');
+        }
+        
+        function toggleAttacker(idx) {
+            const element = document.getElementById(`attacker-${idx}`);
+            const position = selectedAttackers.indexOf(idx);
+            
+            if (position > -1) {
+                selectedAttackers.splice(position, 1);
+                element.classList.remove('selected');
+            } else {
+                selectedAttackers.push(idx);
+                element.classList.add('selected');
+            }
+            
+            console.log('Selected attackers:', selectedAttackers, 'Defender:', selectedDefender);
+            updateCombatButton();
+        }
+        
+        function selectAllAttackers(count) {
+            selectedAttackers = [];
+            for (let i = 0; i < count; i++) {
+                selectedAttackers.push(i);
+                const element = document.getElementById(`attacker-${i}`);
+                if (element) {
+                    element.classList.add('selected');
+                }
+            }
+            console.log('Selected all attackers:', selectedAttackers);
+            updateCombatButton();
+        }
+        
+        function selectDefender(idx) {
+            // Clear previous selection
+            if (selectedDefender !== null) {
+                const prevElement = document.getElementById(`defender-${selectedDefender}`);
+                if (prevElement) {
+                    prevElement.classList.remove('selected');
+                }
+            }
+            
+            selectedDefender = idx;
+            const element = document.getElementById(`defender-${idx}`);
+            if (element) {
+                element.classList.add('selected');
+            }
+            
+            console.log('Selected defender:', selectedDefender, 'Attackers:', selectedAttackers);
+            updateCombatButton();
+        }
+        
+        function updateCombatButton() {
+            const button = document.getElementById('attackButton');
+            const prompt = document.getElementById('selectionPrompt');
+            
+            console.log('Updating button - Attackers:', selectedAttackers.length, 'Defender:', selectedDefender);
+            
+            if (selectedAttackers.length > 0 && selectedDefender !== null) {
+                if (button) button.style.display = 'block';
+                if (prompt) prompt.style.display = 'none';
+                console.log('ROLL THE DIE button should now be visible');
+            } else {
+                if (button) button.style.display = 'none';
+                if (prompt) prompt.style.display = 'block';
+                console.log('Selection incomplete - button hidden');
+            }
+        }
+        
+        function proceedWithCombat(attackerHexId, defenderHexId) {
+            const attackerCount = selectedAttackers.length;
+            const defenderUnit = window.combatData.defenders[selectedDefender];
+            
+            resolveCombat(attackerHexId, defenderHexId, attackerCount, defenderUnit);
+        }
+        
+        function cancelCombat() {
+            document.getElementById('combatModal').classList.remove('show');
+            selectedAttackers = [];
+            selectedDefender = null;
+        }
+
+        function resolveCombat(attackerHexId, defenderHexId, attackerCount, defenderUnit) {
+            const dieRoll = Math.floor(Math.random() * 6) + 1;
+            const notes = [];
+            
+            const defenderHex = hexGrid[defenderHexId];
+            
+            // Woods/Town double unit count for defender (1 unit = 2, 2 units = 4)
+            let effectiveDefenderCount = 1;  // Base: defending unit counts as 1
+            if (defenderHex.terrain === 'town' || defenderHex.terrain === 'woods') {
+                effectiveDefenderCount = 2;  // In terrain: defending unit counts as 2
+                notes.push(`Defender in ${defenderHex.terrain}: counts as 2 units`);
+            }
+            
+            // Check how many defenders total in this hex (for display)
+            const allDefenders = defenderHex.units.filter(u => u.player !== currentPlayer);
+            if (allDefenders.length > 1) {
+                notes.push(`${allDefenders.length} defenders in hex`);
+            }
+            
+            // Check if defender is an artillery unit being attacked by ground units
+            // Shifts combat one column in attacker's favor (attackerCount +1)
+            const defenderIsArtillery = defenderUnit.type === 'artillery';
+            let effectiveAttackerCount = attackerCount;
+            if (defenderIsArtillery) {
+                effectiveAttackerCount = Math.min(6, attackerCount + 1);
+                notes.push(`Artillery target: attacker column shifted +1`);
+            }
+            
+            // Check if all attackers are artillery - artillery immune to adverse results when attacking
+            const attackingUnits = selectedAttackers.map(idx => window.combatData.attackers[idx]?.unit).filter(Boolean);
+            const allArtilleryAttackers = attackingUnits.length > 0 && attackingUnits.every(u => u.type === 'artillery');
+            
+            // Determine combat result column based on attacker vs defender ratio
+            // Columns: 1 (Equal), 2 (+1), 3 (+2), 4 (+3), 5 (+4), 6 (+5)
+            const netAdvantage = effectiveAttackerCount - effectiveDefenderCount;
+            const column = Math.max(1, Math.min(6, 1 + netAdvantage));
+            
+            let result = COMBAT_TABLE[dieRoll][column];
+            
+            // Artillery immune to adverse results when it is the attacker
+            if (allArtilleryAttackers && (result.includes('Attacker Retreats') || result.includes('Attacker Eliminated'))) {
+                result = 'No Effect (Artillery immune to adverse results when attacking)';
+                notes.push('Artillery attacking: adverse result negated');
+            }
+            
+            const notesHTML = notes.length > 0
+                ? `<div class="combat-info" style="background:#fef9e7; border-left: 4px solid #f39c12;">
+                     ⚡ ${notes.join('<br>⚡ ')}
+                   </div>`
+                : '';
+            
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <div class="combat-info">
+                    <strong>Attackers:</strong> ${attackerCount} unit(s)${effectiveAttackerCount !== attackerCount ? ` → effective ${effectiveAttackerCount}` : ''}
+                </div>
+                <div class="combat-info">
+                    <strong>Defender:</strong> Unit ${defenderUnit.label}${effectiveDefenderCount > 1 ? ` (counts as ${effectiveDefenderCount})` : ''} in ${defenderHex.terrain}${defenderIsArtillery ? ' 🎯 (ARTILLERY)' : ''}
+                </div>
+                ${notesHTML}
+                <div class="combat-result">
+                    🎲 DIE ROLL: ${dieRoll} | Column: ${column} (${effectiveAttackerCount} vs ${effectiveDefenderCount})
+                </div>
+                <div class="combat-result" style="font-size: ${result.includes('immune') ? '16px' : '20px'};">
+                    ${result}
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button onclick="applyCombatResult('${attackerHexId}', '${defenderHexId}', \`${result}\`, '${defenderUnit.id}')" 
+                            style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
+                        APPLY RESULT
+                    </button>
+                </div>
+            `;
+            
+            logMessage(`Combat: ${attackerCount} vs Unit ${defenderUnit.label}. Roll: ${dieRoll}, Column: ${column}${notes.length ? ' (' + notes.join(', ') + ')' : ''}. ${result}`, 'log-combat');
+        }
+
+        function applyCombatResult(attackerHexId, defenderHexId, result, defenderUnitId) {
+            const defenderHex = hexGrid[defenderHexId];
+            
+            // Mark attacking units as moved
+            const attackingUnits = [];
+            selectedAttackers.forEach(idx => {
+                const attacker = window.combatData.attackers[idx];
+                if (attacker) {
+                    const unit = attacker.unit || attacker;
+                    const fromHex = attacker.fromHex || attackerHexId;
+                    if (unit) {
+                        unit.moved = true;
+                        attackingUnits.push({ unit, fromHex });
+                    }
+                }
+            });
+            
+            // Check if all attackers were artillery (immune to adverse results & cannot advance)
+            const allArtilleryAttackers = attackingUnits.length > 0 && attackingUnits.every(a => a.unit.type === 'artillery');
+            
+            if (result.includes('No Effect')) {
+                // Artillery immune result - nothing happens to attacker
+                logMessage('Artillery attack: no adverse effect on attacker.', 'log-combat');
+                finishCombat();
+                return;
+            } else if (result.includes('Defender Eliminated')) {
+                defenderHex.units = defenderHex.units.filter(u => u.id !== defenderUnitId);
+                logMessage(`Defender eliminated in ${defenderHexId}!`, 'log-combat');
+                
+                // Artillery cannot advance - only offer advance if non-artillery attacked
+                if (!allArtilleryAttackers) {
+                    renderUnits();
+                    showAdvanceOption(defenderHexId, attackingUnits);
+                    return;
+                }
+                
+            } else if (result.includes('Defender Retreats')) {
+                const defenderPlayer = defenderHex.units.find(u => u.id === defenderUnitId)?.player;
+                
+                // Get ALL defending units in this hex (stacked units retreat together)
+                const allDefendersInHex = defenderHex.units.filter(u => u.player === defenderPlayer);
+                
+                if (allDefendersInHex.length === 0) {
+                    logMessage(`No defenders to retreat!`, 'log-combat');
+                } else {
+                    const retreatResult = getRetreatHex(defenderHexId, defenderPlayer);
+                    
+                    if (!retreatResult) {
+                        // No valid retreat - all defenders eliminated
+                        defenderHex.units = defenderHex.units.filter(u => u.player !== defenderPlayer);
+                        logMessage(`${allDefendersInHex.length} defender(s) eliminated (no retreat path)!`, 'log-combat');
+                    } else if (retreatResult.forcedCombat) {
+                        // Must retreat through enemy ZOC - forced combat for all units
+                        let eliminatedCount = 0;
+                        let retreatedCount = 0;
+                        
+                        allDefendersInHex.forEach(unit => {
+                            const finalHex = handleForcedRetreatCombat(unit, retreatResult.hex);
+                            if (finalHex) {
+                                unit.hex = finalHex;
+                                hexGrid[finalHex].units.push(unit);
+                                retreatedCount++;
+                            } else {
+                                eliminatedCount++;
+                            }
+                        });
+                        
+                        defenderHex.units = defenderHex.units.filter(u => u.player !== defenderPlayer);
+                        logMessage(`${retreatedCount} defender(s) retreated, ${eliminatedCount} eliminated in forced combat`, 'log-combat');
+                    } else {
+                        // Normal retreat - all defenders retreat together
+                        const retreatHex = retreatResult.hex ? retreatResult.hex : retreatResult;
+                        
+                        allDefendersInHex.forEach(unit => {
+                            unit.hex = retreatHex;
+                            hexGrid[retreatHex].units.push(unit);
+                        });
+                        
+                        defenderHex.units = defenderHex.units.filter(u => u.player !== defenderPlayer);
+                        logMessage(`${allDefendersInHex.length} defender(s) retreated to ${retreatHex}`, 'log-combat');
+                    }
+                }
+                
+                // Artillery cannot advance - only offer advance if non-artillery attacked
+                if (!allArtilleryAttackers) {
+                    renderUnits();
+                    showAdvanceOption(defenderHexId, attackingUnits);
+                    return;
+                }
+                
+            } else if (result.includes('Attacker Eliminated')) {
+                // Artillery is immune when attacking - this branch only hit if non-artillery attacked
+                // Group attacking units by their source hex
+                const hexesToEliminate = new Set();
+                attackingUnits.forEach(({ fromHex }) => hexesToEliminate.add(fromHex));
+                
+                let totalEliminated = 0;
+                
+                // Process each attacking hex - ALL units in that hex are eliminated
+                hexesToEliminate.forEach(fromHexId => {
+                    const fromHex = hexGrid[fromHexId];
+                    if (!fromHex) return;
+                    
+                    // Count all friendly units before removing
+                    const allUnitsInHex = fromHex.units.filter(u => u.player === currentPlayer);
+                    totalEliminated += allUnitsInHex.length;
+                    
+                    // Remove all friendly units from this hex
+                    fromHex.units = fromHex.units.filter(u => u.player !== currentPlayer);
+                });
+                
+                logMessage(`${totalEliminated} attacker(s) eliminated!`, 'log-combat');
+                
+            } else if (result.includes('Attacker Retreats')) {
+                // Artillery is immune when attacking - this branch only hit if non-artillery attacked
+                // Group attacking units by their source hex
+                const hexesToRetreat = new Set();
+                attackingUnits.forEach(({ fromHex }) => hexesToRetreat.add(fromHex));
+                
+                let totalRetreated = 0;
+                let totalEliminated = 0;
+                
+                // Process each attacking hex - ALL units in that hex must retreat together
+                hexesToRetreat.forEach(fromHexId => {
+                    const fromHex = hexGrid[fromHexId];
+                    if (!fromHex) return;
+                    
+                    // Get ALL friendly units in this hex (not just attackers - stacked units retreat together)
+                    const allUnitsInHex = fromHex.units.filter(u => u.player === currentPlayer);
+                    
+                    if (allUnitsInHex.length === 0) return;
+                    
+                    const retreatResult = getRetreatHex(fromHexId, currentPlayer);
+                    
+                    if (!retreatResult) {
+                        // No retreat path - all units eliminated
+                        fromHex.units = fromHex.units.filter(u => u.player !== currentPlayer);
+                        totalEliminated += allUnitsInHex.length;
+                    } else if (retreatResult.forcedCombat) {
+                        // Forced combat for all units
+                        allUnitsInHex.forEach(unit => {
+                            const finalHex = handleForcedRetreatCombat(unit, retreatResult.hex);
+                            if (finalHex) {
+                                unit.hex = finalHex;
+                                hexGrid[finalHex].units.push(unit);
+                                totalRetreated++;
+                            } else {
+                                totalEliminated++;
+                            }
+                        });
+                        fromHex.units = fromHex.units.filter(u => u.player !== currentPlayer);
+                    } else {
+                        // Normal retreat - all units retreat together
+                        const retreatHex = retreatResult.hex ? retreatResult.hex : retreatResult;
+                        allUnitsInHex.forEach(unit => {
+                            unit.hex = retreatHex;
+                            hexGrid[retreatHex].units.push(unit);
+                        });
+                        fromHex.units = fromHex.units.filter(u => u.player !== currentPlayer);
+                        totalRetreated += allUnitsInHex.length;
+                    }
+                });
+                
+                if (totalEliminated > 0) {
+                    logMessage(`${totalRetreated} attacker(s) retreated, ${totalEliminated} eliminated`, 'log-combat');
+                } else {
+                    logMessage(`${totalRetreated} attacker(s) retreated`, 'log-combat');
+                }
+            }
+            
+            finishCombat();
+        }
+
+        function showAdvanceOption(vacatedHexId, attackingUnits) {
+            // Only infantry can advance - filter out artillery
+            const eligibleUnits = (attackingUnits || []).filter(a => a.unit.type !== 'artillery');
+
+            if (eligibleUnits.length === 0) {
+                finishCombat();
+                return;
+            }
+
+            const modalBody = document.getElementById('modalBody');
+            
+            let unitListHTML = eligibleUnits.map((a, i) =>
+                `<div class="selectable-unit" id="advance-unit-${i}" onclick="toggleAdvanceUnit(${i})">
+                    Unit ${a.unit.label} (from ${a.fromHex})
+                </div>`
+            ).join('');
+
+            modalBody.innerHTML = `
+                <div class="modal-header" style="color: #27ae60;">⚔️ ADVANCE AFTER COMBAT?</div>
+                <div class="combat-info">
+                    Hex <strong>${vacatedHexId}</strong> is now clear!<br>
+                    Select which units to advance into the vacated hex, or decline.
+                </div>
+                <div class="combat-info">
+                    <strong>Select units to advance:</strong>
+                    <div class="unit-selector" style="margin-top: 10px;">
+                        ${unitListHTML}
+                    </div>
+                </div>
+                <div style="display: flex; gap: 15px; justify-content: center; margin-top: 25px; flex-wrap: wrap;">
+                    <button onclick="advanceInto('${vacatedHexId}')"
+                            style="background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%);
+                                   color: white; padding: 18px 30px; font-size: 18px;
+                                   font-weight: bold; border: none; border-radius: 10px;
+                                   cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                        ✅ ADVANCE
+                    </button>
+                    <button onclick="declineAdvance()"
+                            style="background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+                                   color: white; padding: 18px 30px; font-size: 18px;
+                                   font-weight: bold; border: none; border-radius: 10px;
+                                   cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                        ❌ STAY PUT
+                    </button>
+                </div>
+            `;
+
+            // Store the advancing units for use in advanceInto
+            window.advanceData = { units: eligibleUnits, vacatedHexId };
+            window.selectedAdvanceUnits = [];
+        }
+
+        function toggleAdvanceUnit(idx) {
+            const element = document.getElementById(`advance-unit-${idx}`);
+            const pos = window.selectedAdvanceUnits.indexOf(idx);
+            if (pos > -1) {
+                window.selectedAdvanceUnits.splice(pos, 1);
+                element.classList.remove('selected');
+            } else {
+                window.selectedAdvanceUnits.push(idx);
+                element.classList.add('selected');
+            }
+        }
+
+        function advanceInto(vacatedHexId) {
+            const unitsToAdvance = window.selectedAdvanceUnits.length > 0
+                ? window.selectedAdvanceUnits
+                : window.advanceData.units.map((_, i) => i); // Default: advance all if none selected
+
+            unitsToAdvance.forEach(idx => {
+                const attacker = window.advanceData.units[idx];
+                if (attacker && attacker.unit && attacker.fromHex) {
+                    const unit = attacker.unit;
+                    const fromHex = attacker.fromHex;
+                    
+                    // Move unit into the vacated hex
+                    unit.hex = vacatedHexId;
+                    hexGrid[vacatedHexId].units.push(unit);
+                    hexGrid[fromHex].units = hexGrid[fromHex].units.filter(u => u.id !== unit.id);
+                }
+            });
+
+            logMessage(`${unitsToAdvance.length} unit(s) advanced into ${vacatedHexId}!`, 'log-move');
+            updateTownControl();
+            finishCombat();
+        }
+
+        function declineAdvance() {
+            logMessage('Attacker chose not to advance.', 'log-move');
+            finishCombat();
+        }
+
+        function finishCombat() {
+            selectedAttackers = [];
+            selectedDefender = null;
+            window.advanceData = null;
+            window.selectedAdvanceUnits = [];
+            updateTownControl();
+            renderUnits();
+            document.getElementById('combatModal').classList.remove('show');
+        }
+
+        function showSplitUnitsModal(hexId) {
+            const hex = hexGrid[hexId];
+            const myUnits = hex.units.filter(u => u.player === currentPlayer && !u.moved);
+            
+            if (myUnits.length < 2) {
+                logMessage('Need at least 2 units to split!');
+                return;
+            }
+            
+            const modal = document.getElementById('combatModal');
+            const modalBody = document.getElementById('modalBody');
+            
+            const unitHTML = myUnits.map((unit, idx) => `
+                <div class="selectable-unit" id="split-unit-${idx}" onclick="toggleSplitUnit(${idx})" style="margin: 10px 0;">
+                    <strong>Unit ${unit.label}</strong> ${unit.type === 'artillery' ? '🎯 (Artillery)' : '(Infantry)'}
+                </div>
+            `).join('');
+            
+            modalBody.innerHTML = `
+                <div class="modal-header" style="color: #9b59b6;">✂️ SPLIT STACKED UNITS</div>
+                <div class="combat-info">
+                    Select which unit(s) to move separately.<br>
+                    Selected units will stay in this hex, unselected will be ready to move.
+                </div>
+                <div style="margin: 20px 0;">
+                    ${unitHTML}
+                </div>
+                <div style="display: flex; gap: 15px; justify-content: center; margin-top: 25px;">
+                    <button onclick="applySplit('${hexId}')"
+                            style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+                                   color: white; padding: 15px 30px; font-size: 16px;
+                                   font-weight: bold; border: none; border-radius: 8px; cursor: pointer;">
+                        CONFIRM SPLIT
+                    </button>
+                    <button onclick="cancelSplit()"
+                            style="background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+                                   color: white; padding: 15px 30px; font-size: 16px;
+                                   font-weight: bold; border: none; border-radius: 8px; cursor: pointer;">
+                        CANCEL
+                    </button>
+                </div>
+            `;
+            
+            window.splitSelection = [];
+            modal.classList.add('show');
+        }
+        
+        function toggleSplitUnit(idx) {
+            const element = document.getElementById(`split-unit-${idx}`);
+            const pos = window.splitSelection.indexOf(idx);
+            
+            if (pos > -1) {
+                window.splitSelection.splice(pos, 1);
+                element.classList.remove('selected');
+            } else {
+                window.splitSelection.push(idx);
+                element.classList.add('selected');
+            }
+        }
+        
+        function applySplit(hexId) {
+            const hex = hexGrid[hexId];
+            const myUnits = hex.units.filter(u => u.player === currentPlayer && !u.moved);
+            
+            // Mark selected units as "held back" (can't move this turn after split)
+            window.splitSelection.forEach(idx => {
+                if (myUnits[idx]) {
+                    myUnits[idx].moved = true;
+                }
+            });
+            
+            const heldBack = window.splitSelection.length;
+            const canMove = myUnits.length - heldBack;
+            
+            logMessage(`Split complete: ${canMove} unit(s) can move, ${heldBack} held in position`, 'log-move');
+            
+            document.getElementById('combatModal').classList.remove('show');
+            window.splitSelection = [];
+            
+            renderUnits();
+            clearHighlights();
+            
+            // Re-select the hex to show updated valid moves
+            if (canMove > 0) {
+                selectedHex = hexId;
+                hex.element.classList.add('selected');
+                highlightValidMoves(hexId);
+            } else {
+                selectedHex = null;
+            }
+        }
+        
+        function cancelSplit() {
+            document.getElementById('combatModal').classList.remove('show');
+            window.splitSelection = [];
+        }
+
+        function endTurn() {
+            // Reset moved status
+            Object.values(hexGrid).forEach(hex => {
+                hex.units.forEach(unit => {
+                    if (unit.player === currentPlayer) {
+                        unit.moved = false;
+                    }
+                });
+            });
+            
+            // Switch player and reset phase
+            currentPlayer = currentPlayer === 'us' ? 'soviet' : 'us';
+            if (currentPlayer === 'soviet') {
+                turnNumber++;  // Increment when Soviet's turn starts (not US)
+            }
+            
+            turnPhase = 'movement';  // Reset to movement phase
+            combatOccurred = false;
+            selectedHex = null;
+            attackMode = false;
+            clearHighlights();
+            document.getElementById('attackBtn').style.display = 'none';
+            
+            logMessage(`Turn ${turnNumber}: ${currentPlayer.toUpperCase()} player's turn - Movement Phase`);
+            updateDisplay();
+            updateTownControl();  // Check victory conditions at start of each turn
+            renderUnits();
+        }
+
+        function resetGame() {
+            if (confirm('Reset the game? All progress will be lost.')) {
+                Object.values(hexGrid).forEach(hex => {
+                    hex.units = [];
+                });
+                currentPlayer = 'us';
+                turnNumber = 1;
+                selectedHex = null;
+                attackMode = false;
+                clearHighlights();
+                document.getElementById('attackBtn').style.display = 'none';
+                document.getElementById('combatLog').innerHTML = '';
+                setupUnits();
+                updateDisplay();
+                logMessage('Game reset! US Forces move first.');
+            }
+        }
+
+        function updateDisplay() {
+            document.getElementById('turnCount').textContent = turnNumber;
+            
+            const usIndicator = document.getElementById('usIndicator');
+            const sovietIndicator = document.getElementById('sovietIndicator');
+            const turnHint = document.getElementById('turnHint');
+            const phaseIndicator = document.getElementById('phaseIndicator');
+            const beginCombatBtn = document.getElementById('beginCombatBtn');
+            
+            usIndicator.classList.toggle('active', currentPlayer === 'us');
+            sovietIndicator.classList.toggle('active', currentPlayer === 'soviet');
+            
+            // Update phase indicator
+            if (turnPhase === 'movement') {
+                phaseIndicator.textContent = '📍 MOVEMENT PHASE';
+                phaseIndicator.style.color = '#3498db';
+                beginCombatBtn.style.display = 'inline-block';
+                turnHint.textContent = 'Move your units, then click BEGIN COMBAT';
+            } else {
+                phaseIndicator.textContent = '⚔️ COMBAT PHASE';
+                phaseIndicator.style.color = '#e74c3c';
+                beginCombatBtn.style.display = 'none';
+                if (currentPlayer === 'us') {
+                    turnHint.textContent = 'Tap BROWN units to attack. Movement locked.';
+                } else {
+                    turnHint.textContent = 'Tap GREEN units to attack. Movement locked.';
+                }
+            }
+        }
+
+        function logMessage(message, className = '') {
+            const log = document.getElementById('combatLog');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry ' + className;
+            entry.textContent = `[Turn ${turnNumber}] ${message}`;
+            log.insertBefore(entry, log.firstChild);
+            
+            // Keep only last 20 messages
+            while (log.children.length > 20) {
+                log.removeChild(log.lastChild);
+            }
+        }
+
+        function addEventListeners() {
+            document.getElementById('endTurnBtn').addEventListener('click', endTurn);
+            document.getElementById('resetBtn').addEventListener('click', resetGame);
+            
+            document.getElementById('splitUnitsBtn').addEventListener('click', () => {
+                if (selectedHex && turnPhase === 'movement') {
+                    showSplitUnitsModal(selectedHex);
+                }
+            });
+            
+            document.getElementById('beginCombatBtn').addEventListener('click', () => {
+                if (turnPhase === 'movement') {
+                    turnPhase = 'combat';
+                    logMessage('💥 Combat phase begun! Movement is now locked.');
+                    updateDisplay();
+                }
+            });
+            
+            document.getElementById('attackBtn').addEventListener('click', () => {
+                attackMode = !attackMode;
+                if (attackMode && selectedHex) {
+                    clearHighlights();
+                    hexGrid[selectedHex].element.classList.add('selected');
+                    highlightValidMoves(selectedHex);
+                } else if (selectedHex) {
+                    clearHighlights();
+                    hexGrid[selectedHex].element.classList.add('selected');
+                    highlightValidMoves(selectedHex);
+                }
+            });
+            
+            // Click handler for hexes
+            document.getElementById('gameBoard').addEventListener('click', (e) => {
+                let target = e.target;
+                while (target && !target.classList.contains('hex')) {
+                    target = target.parentElement;
+                }
+                
+                if (target && target.classList.contains('hex')) {
+                    const hexId = target.id.replace('hex-', '');
+                    selectHex(hexId);
+                }
+            });
+        }
+
+        // Start the game
+        init();
+    </script>
+</body>
+</html>
