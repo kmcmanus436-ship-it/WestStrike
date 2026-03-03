@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strike Force One - Game Instructions</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #8B0000 0%, #2c3e50 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        h2 {
+            color: #8B0000;
+            font-size: 2em;
+            margin: 30px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #8B0000;
+        }
+        
+        h3 {
+            color: #2c3e50;
+            font-size: 1.5em;
+            margin: 25px 0 10px 0;
+        }
+        
+        h4 {
+            color: #34495e;
+            font-size: 1.2em;
+            margin: 20px 0 10px 0;
+        }
+        
+        p {
+            margin: 10px 0;
+            font-size: 1.05em;
+        }
+        
+        ul, ol {
+            margin: 15px 0 15px 30px;
+        }
+        
+        li {
+            margin: 8px 0;
+            font-size: 1.05em;
+        }
+        
+        .phase-box {
+            background: #ecf0f1;
+            border-left: 5px solid #3498db;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .victory-box {
+            background: #fff9e6;
+            border: 3px solid #f39c12;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+        }
+        
+        .tip-box {
+            background: #e8f8f5;
+            border-left: 5px solid #27ae60;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .icon {
+            font-size: 1.3em;
+            margin-right: 5px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: #34495e;
+            color: white;
+            font-weight: bold;
+        }
+        
+        tr:hover {
+            background: #f5f5f5;
+        }
+        
+        .play-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: white;
+            padding: 15px 40px;
+            font-size: 1.3em;
+            font-weight: bold;
+            text-decoration: none;
+            border-radius: 10px;
+            margin: 30px 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        
+        .play-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9em;
+        }
+        
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 20px 15px;
+            }
+            
+            h2 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚔️ STRIKE FORCE ONE ⚔️</h1>
+            <p>Tactical Hexagonal Wargame</p>
+            <a href="index.html" class="play-button">▶️ PLAY GAME</a>
+        </header>
+        
+        <div class="content">
+            <p style="font-size: 1.2em; text-align: center; margin-bottom: 30px;">
+                A tactical hexagonal wargame set in West Germany. Command US or Soviet forces in a race to control strategic towns while managing casualties and terrain advantages.
+            </p>
+            
+            <h2><span class="icon">🎮</span>How to Play</h2>
+            
+            <h3>Game Setup</h3>
+            <ul>
+                <li><strong>Soviet Forces</strong> (6 units): Start on the right side, move first 🇷🇺</li>
+                <li><strong>US Forces</strong> (4 infantry + 1 artillery): Start on the left side 🇺🇸</li>
+                <li><strong>Map</strong>: 8×9 hexagonal grid representing West Germany terrain</li>
+            </ul>
+            
+            <h3>Turn Structure</h3>
+            <p>Each turn has two phases:</p>
+            
+            <div class="phase-box">
+                <h4>📍 Movement Phase</h4>
+                <ul>
+                    <li>Move your units (Infantry: 4 hexes, Artillery: 2 hexes)</li>
+                    <li>Stack up to 2 units in towns/open terrain (only 1 in woods)</li>
+                    <li>Units stop when adjacent to enemy units</li>
+                    <li>Click <strong>SPLIT UNITS</strong> button to move stacked units separately</li>
+                    <li>When done, click <strong>BEGIN COMBAT</strong></li>
+                </ul>
+            </div>
+            
+            <div class="phase-box">
+                <h4>⚔️ Combat Phase</h4>
+                <ul>
+                    <li>Movement is now locked</li>
+                    <li>Tap enemy units to attack with adjacent/ranged units</li>
+                    <li>Select which of your units attack and which enemy unit to target</li>
+                    <li>Roll die to resolve combat</li>
+                    <li>Can make multiple attacks</li>
+                    <li>Click <strong>END TURN</strong> when done</li>
+                </ul>
+            </div>
+            
+            <h2><span class="icon">🎯</span>Unit Types</h2>
+            
+            <table>
+                <tr>
+                    <th>Unit Type</th>
+                    <th>Movement</th>
+                    <th>Attack Range</th>
+                    <th>Special Abilities</th>
+                </tr>
+                <tr>
+                    <td><strong>Infantry</strong></td>
+                    <td>4 hexes</td>
+                    <td>Adjacent only</td>
+                    <td>Can advance after combat</td>
+                </tr>
+                <tr>
+                    <td><strong>Artillery (US only)</strong></td>
+                    <td>2 hexes</td>
+                    <td>3 hexes</td>
+                    <td>Immune to adverse results when attacking<br>Cannot advance<br>Vulnerable when attacked (+1 column)</td>
+                </tr>
+            </table>
+            
+            <h2><span class="icon">🗺️</span>Terrain Effects</h2>
+            
+            <h3>🏛️ Towns (crosshatch pattern)</h3>
+            <ul>
+                <li>Units count as <strong>2× their number</strong> when defending</li>
+                <li>Stack limit: 2 units</li>
+                <li>Victory objective: Control to win!</li>
+            </ul>
+            
+            <h3>🌲 Woods (green hexes)</h3>
+            <ul>
+                <li>Units count as <strong>2× their number</strong> when defending</li>
+                <li>Stack limit: 1 unit only</li>
+                <li>Movement cost: 2 hexes to enter</li>
+            </ul>
+            
+            <h3>Ordinary Hexes</h3>
+            <ul>
+                <li>No special effects</li>
+                <li>Stack limit: 2 units</li>
+            </ul>
+            
+            <h2><span class="icon">🎲</span>Combat System</h2>
+            
+            <ol>
+                <li><strong>Select Attackers</strong>: Choose which adjacent/ranged units attack</li>
+                <li><strong>Select Defender</strong>: Pick which enemy unit to target</li>
+                <li><strong>Roll Die</strong>: Combat results determined by attacker count vs defender count</li>
+                <li><strong>Terrain Bonus</strong>: Defenders in towns/woods count as double</li>
+                <li><strong>Results</strong>: Units eliminated, retreat, or no effect</li>
+            </ol>
+            
+            <h3>Retreat Rules</h3>
+            <p>When forced to retreat, units follow this priority:</p>
+            <ol>
+                <li><strong>First</strong>: Unoccupied hex outside enemy Zone of Control</li>
+                <li><strong>Second</strong>: Friendly-occupied hex (even in ZOC) with room</li>
+                <li><strong>Third</strong>: Through enemy ZOC (triggers forced retreat combat on Equal column)</li>
+            </ol>
+            <p><strong>Important:</strong> Stacked units retreat together! Both units must retreat if result requires it.</p>
+            
+            <div class="victory-box">
+                <h2><span class="icon">🏆</span>Victory Conditions</h2>
+                
+                <h3>Soviet Victory 🇷🇺</h3>
+                <ul>
+                    <li>Control all 3 towns (instant win)</li>
+                    <li>OR control 2+ towns after Turn 10</li>
+                </ul>
+                
+                <h3>US Victory 🇺🇸</h3>
+                <ul>
+                    <li>Reduce Soviet forces to 3 or fewer units (instant win)</li>
+                    <li>OR reach end of Turn 10 without Soviet winning</li>
+                </ul>
+                
+                <h3>Town Control</h3>
+                <ul>
+                    <li>🔴 Red town = Soviet controlled</li>
+                    <li>🔵 Blue town = US controlled</li>
+                    <li>Occupy a town hex to capture it</li>
+                    <li>Recapture by moving units back in</li>
+                </ul>
+            </div>
+            
+            <div class="tip-box">
+                <h2><span class="icon">💡</span>Strategic Tips</h2>
+                <ul>
+                    <li><strong>US Strategy</strong>: Defend towns, focus on eliminating Soviet units</li>
+                    <li><strong>Soviet Strategy</strong>: Capture and hold towns, minimize casualties</li>
+                    <li><strong>Artillery</strong>: Keep back, provide fire support, protect from direct assault</li>
+                    <li><strong>Stacking</strong>: Use 2-unit stacks in towns for maximum defense (counts as 4 units!)</li>
+                    <li><strong>Timing</strong>: Move all units before starting combat - you can't go back to movement</li>
+                    <li><strong>Split Units</strong>: Divide stacks to defend multiple positions or create mobile reserves</li>
+                </ul>
+            </div>
+            
+            <h2><span class="icon">📱</span>Controls</h2>
+            <ul>
+                <li><strong>Tap unit</strong> → Select and highlight valid moves (green) or targets (red)</li>
+                <li><strong>Tap green hex</strong> → Move selected units there</li>
+                <li><strong>Tap red hex</strong> → Attack that hex</li>
+                <li><strong>Tap stacked units</strong> → Split button appears to divide them</li>
+            </ul>
+            
+            <h2><span class="icon">🎮</span>Game Features</h2>
+            <ul>
+                <li>Turn-based tactical gameplay</li>
+                <li>Phase-based turn structure (movement → combat)</li>
+                <li>Visual town control indicators</li>
+                <li>Combat log showing all actions</li>
+                <li>Unit splitting for tactical flexibility</li>
+                <li>Advance after combat option</li>
+                <li>Directional retreat system</li>
+                <li>Victory condition tracking</li>
+            </ul>
+            
+            <h2><span class="icon">📊</span>Game Information</h2>
+            <ul>
+                <li><strong>Players</strong>: 2 (hot seat - pass and play)</li>
+                <li><strong>Playtime</strong>: 20-40 minutes</li>
+                <li><strong>Complexity</strong>: Medium</li>
+                <li><strong>Platform</strong>: Web browser (mobile-friendly)</li>
+            </ul>
+            
+            <div style="text-align: center; margin: 40px 0;">
+                <a href="index.html" class="play-button">▶️ START PLAYING NOW</a>
+            </div>
+        </div>
+        
+        <footer>
+            <p><strong>STRIKE FORCE ONE</strong> - A hexagonal tactical wargame</p>
+            <p>Version 1.0 | February 2026</p>
+            <p>Enjoy the battle! ⚔️🎯</p>
+        </footer>
+    </div>
+</body>
+</html>
